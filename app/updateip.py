@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 from datetime import datetime
 
 guser = os.getenv("GOOGLE_DNS_USER", None)
@@ -7,6 +8,7 @@ gpwd = os.getenv("GOOGLE_DNS_PWD", None)
 grecord = os.getenv("GOOGLE_DNS_RECORD", None)
 detectip = os.getenv("DETECT_IP", None)
 newip = os.getenv("NEW_IP", None)
+interval = os.getenv("UPDATE_INTEVAL_MINS", None)
 myip_url = 'https://api.myip.com'
 
 if guser is None:
@@ -25,6 +27,11 @@ if detectip.lower() == 'false':
 else:
     detectip = True
 
+if interval is None:
+    interval = 5
+else:
+    interval = int(interval)
+
 if len(guser.split(',')) == len(gpwd.split(',')) == len(grecord.split(',')):
     nrecords = len(guser.split(','))
     all_users = guser.split(',')
@@ -33,6 +40,9 @@ if len(guser.split(',')) == len(gpwd.split(',')) == len(grecord.split(',')):
 else:
     raise Exception("GOOGLE_DNS_USER, GOOGLE_DNS_PWD and GOOGLE_DNS_RECORD must have the same number of entries separated by comma!")
 
+## TODO: Validate user/pwd minimum length
+## TODO: Validate newip format
+## TODO: Validate record format
 
 if detectip:
     resp = requests.get(myip_url)
@@ -41,9 +51,12 @@ if detectip:
     ip_obj = resp.json()
     newip = ip_obj["ip"]
 
-for ix, record in enumerate(all_records):
-    print(f"Calling Google Dynamic DNS for {record} and IP address {newip}...")
-    gdns_url = f"https://{all_users[ix]}:{all_pwd[ix]}@domains.google.com/nic/update?hostname={record}"
-    update_resp = requests.get(gdns_url)
-    update_parts = update_resp.text.split(' ')
-    print(f"{datetime.now()}, {record}, {update_parts[0]}, {update_parts[1]}")
+while(True):
+    for ix, record in enumerate(all_records):
+        print(f"Calling Google Dynamic DNS for {record} and IP address {newip}...")
+        gdns_url = f"https://{all_users[ix]}:{all_pwd[ix]}@domains.google.com/nic/update?hostname={record}"
+        update_resp = requests.get(gdns_url)
+        update_parts = update_resp.text.split(' ')
+        print(f"{datetime.now()}, {record}, {update_parts[0]}, {update_parts[1]}")
+    print(f"{datetime.now()} - Wait time: {interval} minutes.")
+    time.sleep(60 * interval)

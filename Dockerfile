@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.8-alpine
 
 WORKDIR /app
 COPY . /app
@@ -6,5 +6,4 @@ COPY . /app
 RUN pip install -r requirements.txt
 
 ENTRYPOINT ["python"]
-CMD ["updateip.py"]
-
+CMD ["app/updateip.py"]
