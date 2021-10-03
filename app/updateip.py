@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime
 
 guser = os.getenv("GOOGLE_DNS_USER", None)
 gpwd = os.getenv("GOOGLE_DNS_PWD", None)
@@ -24,6 +25,14 @@ if detectip.lower() == 'false':
 else:
     detectip = True
 
+if len(guser.split(',')) == len(gpwd.split(',')) == len(grecord.split(',')):
+    nrecords = len(guser.split(','))
+    all_users = guser.split(',')
+    all_pwd = gpwd.split(',')
+    all_records = grecord.split(',')
+else:
+    raise Exception("GOOGLE_DNS_USER, GOOGLE_DNS_PWD and GOOGLE_DNS_RECORD must have the same number of entries separated by comma!")
+
 
 if detectip:
     resp = requests.get(myip_url)
@@ -32,10 +41,9 @@ if detectip:
     ip_obj = resp.json()
     newip = ip_obj["ip"]
 
-print(f"Calling Google Dynamic DNS for {grecord} and IP address {newip}...")
-
-gdns_url = f"https://{guser}:{gpwd}@domains.google.com/nic/update?hostname={grecord}"
-
-update_resp = requests.get(gdns_url)
-
-print(update_resp.text)
+for ix, record in enumerate(all_records):
+    print(f"Calling Google Dynamic DNS for {record} and IP address {newip}...")
+    gdns_url = f"https://{all_users[ix]}:{all_pwd[ix]}@domains.google.com/nic/update?hostname={record}"
+    update_resp = requests.get(gdns_url)
+    update_parts = update_resp.text.split(' ')
+    print(f"{datetime.now()}, {record}, {update_parts[0]}, {update_parts[1]}")
